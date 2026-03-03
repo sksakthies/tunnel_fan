@@ -12,17 +12,19 @@ import matplotlib
 matplotlib.use("Agg")  # IMPORTANT for server
 import matplotlib.pyplot as plt
 import io
-
+from flask import Response
+import json, time
+from datetime import datetime
 
 # Initialize Flask
 app = Flask(__name__)
 CORS(app)
 
 # Initialize Firebase
-cred = credentials.Certificate("C:/project_final/real_database.json")
+cred = credentials.Certificate(r"C:\tunnel_fan\project_final\realtime_database.json")
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://test1209-99790-default-rtdb.asia-southeast1.firebasedatabase.app'
+    'databaseURL': 'https://tunnelbooster-ff01f-default-rtdb.asia-southeast1.firebasedatabase.app'
 })
 
 # Load trained ML model
@@ -34,84 +36,141 @@ def index():
     return render_template('index.html')
 
 # Route for real-time streaming
-@app.route('/stream')
+from flask import Response
+import json, time
+from datetime import datetime
+
+@app.route("/stream")
 def stream():
-
     def generate_data():
+        fan_ids = ["Fan-1", "Fan-2"]  # use your fans
 
-        fan_ids = ['Fan-1','Fan-2']
+        last_seen_ts = {}        # fan -> last timestamp
+        stale_count = {}         # fan -> loops without new timestamp
+
+        SLEEP_SEC = 2            # your loop delay
+        STALE_LIMIT = 5          # 5 loops * 2 sec = 10 sec no updates => STOP
+        NO_DATA_LIMIT = 5        # if Firebase returns None for 10 sec => STOP
+
+        no_data_count = 0
 
         while True:
+            current_date = datetime.today().strftime("%d-%m-%Y")
             fans_data = {}
 
-            current_date = datetime.today().strftime('%d-%m-%Y')
+            any_fan_has_data = False
+            any_fan_updated = False
 
             for fan in fan_ids:
-                fan_ref = db.reference(f"{fan}/{current_date}")
-                fan_data = fan_ref.get()
+                path = f"{fan}/{current_date}"
+                fan_data = db.reference(path).get()
 
-                if fan_data:
-                    latest_timestamp = list(fan_data.keys())[-1]
-                    latest_data = fan_data[latest_timestamp]
-
-                    # Prepare features for ML model
-                    features = [
-                        latest_data['temperature'],
-                        latest_data['humidity'],
-                        latest_data['current'],
-                        latest_data['rpm'],
-                        latest_data['pressure']
-                    ]
-
-                    features_array = np.array(features).reshape(1, -1)
-                    ml_prediction = model.predict(features_array)[0]
-
-                    # Threshold anomaly check (YOUR ORIGINAL LOGIC)
-                    threshold_anomaly_params = []
-
-                    if latest_data['temperature'] < 20 or latest_data['temperature'] > 40:
-                        threshold_anomaly_params.append('temperature')
-
-                    if latest_data['humidity'] < 30 or latest_data['humidity'] > 65:
-                        threshold_anomaly_params.append('humidity')
-
-                    if latest_data['current'] < 0.776 or latest_data['current'] > 2.430:
-                        threshold_anomaly_params.append('current')
-
-                    if latest_data['rpm'] < 3800 or latest_data['rpm'] > 4300:
-                        threshold_anomaly_params.append('rpm')
-
-                    if latest_data['pressure'] < 720 or latest_data['pressure'] > 780:
-                        threshold_anomaly_params.append('pressure')
-
-                    # Final anomaly decision
-                    anomaly_status = 'anomaly' if (
-                        ml_prediction == -1 or len(threshold_anomaly_params) > 0
-                    ) else 'normal'
-
-                    error_details = {
-                        'parameters': threshold_anomaly_params,
-                        'timestamp': latest_timestamp
-                    } if anomaly_status == 'anomaly' else None
-
-                    fans_data[fan] = {
-                        'timestamp': latest_timestamp,
-                        'temperature': latest_data['temperature'],
-                        'humidity': latest_data['humidity'],
-                        'current': latest_data['current'],
-                        'rpm': latest_data['rpm'],
-                        'pressure': latest_data['pressure'],
-                        'status': anomaly_status,
-                        'error_details': error_details
-                    }
-
-                else:
+                if not fan_data:
                     fans_data[fan] = None
+                    continue
 
+                any_fan_has_data = True
+
+                latest_timestamp = sorted(fan_data.keys())[-1]
+                latest_data = fan_data[latest_timestamp]
+
+                # ---- NEW: stale detection (no new timestamp means no new live data)
+                if last_seen_ts.get(fan) == latest_timestamp:
+                    stale_count[fan] = stale_count.get(fan, 0) + 1
+                else:
+                    last_seen_ts[fan] = latest_timestamp
+                    stale_count[fan] = 0
+                    any_fan_updated = True
+
+                # ---- KEEP YOUR EXISTING ML + THRESHOLD LOGIC EXACTLY AS IS ----
+                features = [
+                    latest_data.get("temperature", 0),
+                    latest_data.get("humidity", 0),
+                    latest_data.get("current", 0),
+                    latest_data.get("rpm", 0),
+                    latest_data.get("vibration", 0),
+                ]
+
+                features_array = np.array(features).reshape(1, -1)
+                ml_prediction = model.predict(features_array)[0]
+
+                threshold_anomaly_params = []
+
+                if latest_data.get("temperature", 0) < 20 or latest_data.get("temperature", 0) > 40:
+                    threshold_anomaly_params.append("temperature")
+
+                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 65:
+                    threshold_anomaly_params.append("humidity")
+
+                if latest_data.get("current", 0) < 0.776 or latest_data.get("current", 0) > 2.430:
+                    threshold_anomaly_params.append("current")
+
+                if latest_data.get("rpm", 0) < 3800 or latest_data.get("rpm", 0) > 4300:
+                    threshold_anomaly_params.append("rpm")
+
+                # vibration anomaly only high vibration (fan-off not anomaly)
+                if latest_data.get("vibration", 0) > 3.5:
+                    threshold_anomaly_params.append("vibration")
+
+                anomaly_status = "anomaly" if (
+                    ml_prediction == -1 or len(threshold_anomaly_params) > 0
+                ) else "normal"
+
+                error_details = {
+                    "parameters": threshold_anomaly_params,
+                    "timestamp": latest_timestamp
+                } if anomaly_status == "anomaly" else None
+
+                fans_data[fan] = {
+                    "timestamp": latest_timestamp,
+                    "temperature": latest_data.get("temperature", 0),
+                    "humidity": latest_data.get("humidity", 0),
+                    "current": latest_data.get("current", 0),
+                    "rpm": latest_data.get("rpm", 0),
+                    "vibration": latest_data.get("vibration", 0),
+                    "status": anomaly_status,
+                    "error_details": error_details
+                }
+
+            # ---- NEW: stop conditions ----
+            # Case A: no data at all
+            if not any_fan_has_data:
+                no_data_count += 1
+            else:
+                no_data_count = 0
+
+            # If no Firebase data for NO_DATA_LIMIT cycles => STOP stream
+            if no_data_count >= NO_DATA_LIMIT:
+                # send final message then stop
+                yield f"data: {json.dumps({'stream_state': 'stopped', 'reason': 'no_data_from_firebase'})}\n\n"
+                return  # ✅ closes SSE connection
+
+            # Case B: data exists but never updates (latest timestamp not changing)
+            # If every fan is stale for STALE_LIMIT cycles => STOP stream
+            all_stale = True
+            for fan in fan_ids:
+                # only consider fans that actually have data today
+                if last_seen_ts.get(fan) is not None:
+                    if stale_count.get(fan, 0) < STALE_LIMIT:
+                        all_stale = False
+                        break
+                else:
+                    # this fan has no data; ignore it for stale check
+                    pass
+
+            if any_fan_has_data and all_stale and not any_fan_updated:
+                yield f"data: {json.dumps({'stream_state': 'stopped', 'reason': 'no_new_live_updates'})}\n\n"
+                return  # ✅ closes SSE connection
+
+            # normal streaming
             yield f"data: {json.dumps(fans_data)}\n\n"
-            time.sleep(5)
+            time.sleep(SLEEP_SEC)
 
-    return Response(generate_data(), content_type='text/event-stream')
+    return Response(
+        generate_data(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 # ================================
 # ADDITIONAL FEATURES (DO NOT MODIFY EXISTING CODE)
 # ================================
@@ -146,7 +205,7 @@ def get_history():
             values.get("humidity"),
             values.get("current"),
             values.get("rpm"),
-            values.get("pressure")
+            values.get("vibration")
         ]
 
         features_array = np.array(features).reshape(1, -1)
@@ -161,7 +220,7 @@ def get_history():
             "humidity": values.get("humidity"),
             "current": values.get("current"),
             "rpm": values.get("rpm"),
-            "pressure": values.get("pressure"),
+            "vibration": values.get("vibration"),
             "status": anomaly_status
         })    
         
@@ -184,6 +243,7 @@ def download_csv():
 
     if not fan_data:
         return "No data found", 404
+        
 
     records = []
 
@@ -194,7 +254,7 @@ def download_csv():
             "humidity": values.get("humidity"),
             "current": values.get("current"),
             "rpm": values.get("rpm"),
-            "pressure": values.get("pressure")
+            "vibration": values.get("vibration")
         })
 
     df = pd.DataFrame(records)
@@ -237,7 +297,7 @@ def download_excel():
             "humidity": values.get("humidity"),
             "current": values.get("current"),
             "rpm": values.get("rpm"),
-            "pressure": values.get("pressure")
+            "vibration": values.get("vibration")
         })
 
     df = pd.DataFrame(records)

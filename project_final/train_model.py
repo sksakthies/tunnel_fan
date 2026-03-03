@@ -5,10 +5,10 @@ from sklearn.ensemble import IsolationForest
 import joblib
 
 # Initialize Firebase
-cred = credentials.Certificate("C:/project_final/real_database.json")
+cred = credentials.Certificate("C:\\tunnel_fan\\project_final\\realtime_database.json")
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://test1209-99790-default-rtdb.asia-southeast1.firebasedatabase.app'
+    'databaseURL': 'https://tunnelbooster-ff01f-default-rtdb.asia-southeast1.firebasedatabase.app'
 })
 
 fan_ids = ['Fan-1','Fan-2']
@@ -25,13 +25,13 @@ for fan in fan_ids:
             for timestamp in date_data:
                 entry = date_data[timestamp]
 
-                if all(k in entry for k in ['temperature','humidity','current','rpm','pressure']):
+                if all(k in entry for k in ['temperature','humidity','current','rpm','vibration']):
                     all_data.append([
                         float(entry['temperature']),
                         float(entry['humidity']),
                         float(entry['current']),
                         float(entry['rpm']),
-                        float(entry['pressure'])
+                        float(entry['vibration']),
                     ])
 
 print("Total samples:", len(all_data))
