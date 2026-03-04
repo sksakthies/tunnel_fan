@@ -18,7 +18,7 @@ from firebase_admin import credentials, db
 
 # Initialize Flask
 app = Flask(__name__)
-CORS(app)
+CORS(app,origin="https://tunnel-fan.vercel.app?_vercel_share=yVvvovDYAbfW9vtD9834hfLDbsmaX4Hq")
 
 # Initialize Firebase
 cred = credentials.Certificate(r"C:\tunnel_fan\project_final\realtime_database.json")
