@@ -1,20 +1,20 @@
-from flask_cors import CORS
-from flask import Flask, Response, render_template
-import firebase_admin
-from firebase_admin import credentials, db
-import numpy as np
-import joblib
+import io
 import json
 import time
 from datetime import datetime
-from flask import send_file, request
+
+import numpy as np
+import pandas as pd
+import joblib
 import matplotlib
 matplotlib.use("Agg")  # IMPORTANT for server
 import matplotlib.pyplot as plt
-import io
-from flask import Response
-import json, time
-from datetime import datetime
+
+from flask import Flask, Response, render_template, send_file, request, jsonify
+from flask_cors import CORS
+
+import firebase_admin
+from firebase_admin import credentials, db
 
 # Initialize Flask
 app = Flask(__name__)
@@ -36,10 +36,6 @@ def index():
     return render_template('index.html')
 
 # Route for real-time streaming
-from flask import Response
-import json, time
-from datetime import datetime
-
 @app.route("/stream")
 def stream():
     def generate_data():
@@ -56,7 +52,7 @@ def stream():
 
         while True:
             current_date = datetime.today().strftime("%d-%m-%Y")
-            fans_data = {}
+            fans_data: dict = {}
 
             any_fan_has_data = False
             any_fan_updated = False
@@ -96,20 +92,20 @@ def stream():
 
                 threshold_anomaly_params = []
 
-                if latest_data.get("temperature", 0) < 20 or latest_data.get("temperature", 0) > 40:
+                if latest_data.get("temperature", 0) < 20 or latest_data.get("temperature", 0) > 34:
                     threshold_anomaly_params.append("temperature")
 
-                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 65:
+                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 40:
                     threshold_anomaly_params.append("humidity")
 
-                if latest_data.get("current", 0) < 0.776 or latest_data.get("current", 0) > 2.430:
+                if latest_data.get("current", 0) < 0.776 or latest_data.get("current", 0) > 1.0:
                     threshold_anomaly_params.append("current")
 
-                if latest_data.get("rpm", 0) < 3800 or latest_data.get("rpm", 0) > 4300:
+                if latest_data.get("rpm", 0) < 3800 or latest_data.get("rpm", 0) > 6400:
                     threshold_anomaly_params.append("rpm")
 
                 # vibration anomaly only high vibration (fan-off not anomaly)
-                if latest_data.get("vibration", 0) > 3.5:
+                if latest_data.get("vibration", 0) > 2.7:
                     threshold_anomaly_params.append("vibration")
 
                 anomaly_status = "anomaly" if (
@@ -135,7 +131,7 @@ def stream():
             # ---- NEW: stop conditions ----
             # Case A: no data at all
             if not any_fan_has_data:
-                no_data_count += 1
+                no_data_count += 1  # type: ignore
             else:
                 no_data_count = 0
 
@@ -174,11 +170,6 @@ def stream():
 # ================================
 # ADDITIONAL FEATURES (DO NOT MODIFY EXISTING CODE)
 # ================================
-
-from flask import request, jsonify
-import pandas as pd
-import io
-
 
 # -------------------------------
 # 1️⃣ Historical Data by Date
@@ -243,21 +234,49 @@ def download_csv():
 
     if not fan_data:
         return "No data found", 404
-        
-
+       
     records = []
 
     for timestamp, values in fan_data.items():
+
+        features = [
+            values.get("temperature", 0),
+            values.get("humidity", 0),
+            values.get("current", 0),
+            values.get("rpm", 0),
+            values.get("vibration", 0)
+        ]
+
+        features_array = np.array(features).reshape(1, -1)
+
+        try:
+            ml_prediction = model.predict(features_array)[0]
+            anomaly_status = 'anomaly' if ml_prediction == -1 else 'normal'
+        except Exception as e:
+            anomaly_status = 'unknown'
+
         records.append({
             "timestamp": timestamp,
             "temperature": values.get("temperature"),
             "humidity": values.get("humidity"),
             "current": values.get("current"),
             "rpm": values.get("rpm"),
-            "vibration": values.get("vibration")
+            "vibration": values.get("vibration"),
+            "status": anomaly_status   # ✅ FORCE ADD STATUS
         })
 
     df = pd.DataFrame(records)
+
+    # Force column order (VERY IMPORTANT)
+    df = df[[
+        "timestamp",
+        "temperature",
+        "humidity",
+        "current",
+        "rpm",
+        "vibration",
+        "status"
+    ]]
 
     output = io.StringIO()
     df.to_csv(output, index=False)
@@ -291,13 +310,30 @@ def download_excel():
     records = []
 
     for timestamp, values in fan_data.items():
+        features = [
+            values.get("temperature", 0),
+            values.get("humidity", 0),
+            values.get("current", 0),
+            values.get("rpm", 0),
+            values.get("vibration", 0)
+        ]
+
+        features_array = np.array(features).reshape(1, -1)
+
+        try:
+            ml_prediction = model.predict(features_array)[0]
+            anomaly_status = 'anomaly' if ml_prediction == -1 else 'normal'
+        except Exception as e:
+            anomaly_status = 'unknown'
+
         records.append({
             "timestamp": timestamp,
             "temperature": values.get("temperature"),
             "humidity": values.get("humidity"),
             "current": values.get("current"),
             "rpm": values.get("rpm"),
-            "vibration": values.get("vibration")
+            "vibration": values.get("vibration"),
+            "status": anomaly_status
         })
 
     df = pd.DataFrame(records)

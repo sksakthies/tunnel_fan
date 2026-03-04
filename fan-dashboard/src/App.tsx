@@ -1,24 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
-  }
-}
-
-interface HistoryItem {
-  timestamp: string;
-  temperature: number;
-  humidity: number;
-  current: number;
-  rpm: number;
-  vibration: number;
-  status: string;
-}
-
 // Reusable Circular Progress Widget
 const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {
   const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
@@ -108,7 +90,7 @@ function useSlidingWindow(
   const push = (isAnomaly: boolean, fanName: string) => {
     // Expire old entries beyond decay window
     const cutoff = Date.now() - decayMs;
-    entriesRef.current = entriesRef.current.filter((e: WindowEntry) => e.timestamp > cutoff);
+    entriesRef.current = entriesRef.current.filter((e) => e.timestamp > cutoff);
 
     if (isAnomaly) {
       entriesRef.current.push({ timestamp: Date.now(), fanName });
@@ -353,7 +335,7 @@ function App() {
   const displayFan = liveFan || defaultFan;
 
   const liveTotal = liveHistory.length;
-  const liveAnomalyCount = liveHistory.filter((s: string) => s === "anomaly").length;
+  const liveAnomalyCount = liveHistory.filter((s) => s === "anomaly").length;
   const livePct = liveTotal === 0 ? 0 : Math.round((liveAnomalyCount / liveTotal) * 100);
 
   const currentStatus = displayFan.status || "normal";
@@ -371,7 +353,7 @@ function App() {
         const status = k ? data?.[k]?.status : null;
 
         if (status) {
-          setLiveHistory((prev: string[]) => [...prev, status].slice(-50));
+          setLiveHistory((prev) => [...prev, status].slice(-50));
 
           // ── Feed every prediction into the sliding window engine ──────────
           swPush(status === "anomaly", k || "Fan-1");
@@ -565,48 +547,46 @@ function App() {
             type="text"
             placeholder="DD-MM-YYYY"
             value={date}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
-          }
-                style={{ color: '#64748b' }}
-                />
-                <button onClick={loadHistory} disabled={loadingHistory}>
-                {loadingHistory ? "Loading..." : "Load Data"}
-                </button>
-                <button onClick={downloadCSV} style={{ background: 'linear-gradient(to right, #10b981, #059669)' }}>
-                Export CSV
-                </button>
-                <button onClick={downloadExcel} style={{ background: 'linear-gradient(to right, #10b981, #059669)' }}>
-                Export Excel
-                </button>
-                <button onClick={showPredictionChart} style={{ background: 'linear-gradient(to right, #8b5cf6, #6d28d9)' }}>
-                Generate Chart
-                </button>
-              </div>
+            onChange={(e) => setDate(e.target.value)}
+          />
+          <button onClick={loadHistory} disabled={loadingHistory}>
+            {loadingHistory ? "Loading..." : "Load Data"}
+          </button>
+          <button onClick={downloadCSV} style={{ background: 'linear-gradient(to right, #10b981, #059669)' }}>
+            Export CSV
+          </button>
+          <button onClick={downloadExcel} style={{ background: 'linear-gradient(to right, #10b981, #059669)' }}>
+            Export Excel
+          </button>
+          <button onClick={showPredictionChart} style={{ background: 'linear-gradient(to right, #8b5cf6, #6d28d9)' }}>
+            Generate Chart
+          </button>
+        </div>
 
-              {loadingHistory && (
-                <div className="loading-row">
-                <div className="spinner" />
-                <div>Fetching telemetry records from database...</div>
-                </div>
-              )}
+        {loadingHistory && (
+          <div className="loading-row">
+            <div className="spinner" />
+            <div>Fetching telemetry records from database...</div>
+          </div>
+        )}
 
-              {history.length > 0 && (
-                <div className="table-container">
-                <table>
-                  <thead>
-                  <tr>
-                    <th>Timestamp</th>
-                    <th>Temp (°C)</th>
-                    <th>Humidity (%)</th>
-                    <th>Current (A)</th>
-                    <th>RPM</th>
-                    <th>Vibration</th>
-                    <th>Status</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {history.map((item: HistoryItem, index: number) => (
-                    <tr key={index}>
+        {history.length > 0 && (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Temp (°C)</th>
+                  <th>Humidity (%)</th>
+                  <th>Current (A)</th>
+                  <th>RPM</th>
+                  <th>Vibration</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((item, index) => (
+                  <tr key={index}>
                     <td>{item.timestamp}</td>
                     <td>{Number(item.temperature).toFixed(1)}</td>
                     <td>{Number(item.humidity).toFixed(0)}</td>
@@ -615,19 +595,18 @@ function App() {
                     <td>{Number(item.vibration).toFixed(2)}</td>
                     <td>
                       <span className={`status-badge ${item.status === "anomaly" ? "badge-anomaly" : "badge-normal"}`}>
-                      {(item.status || "normal").toUpperCase()}
+                        {(item.status || "normal").toUpperCase()}
                       </span>
                     </td>
-                    </tr>
-                  ))}
-                  </tbody>
-                </table>
-                </div>
-      )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
 
 export default App;
