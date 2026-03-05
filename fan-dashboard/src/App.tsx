@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Login from "./Login";
-const websocketUrl = new WebSocket('ws://localhost:5000/ws');
+
+const BASE_URL = "http://10.41.212.237:5000";
+
 // Reusable Circular Progress Widget
 const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {;
   const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));

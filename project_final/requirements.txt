@@ -8,3 +8,5 @@ gunicorn
 firebase-admin
 matplotlib
 openpyxl
+flask-socketio
+eventlet
