@@ -15,12 +15,8 @@ from flask_cors import CORS
 
 import firebase_admin
 from firebase_admin import credentials, db
-
 # Initialize Flask
 app = Flask(__name__)
-from flask_cors import CORS
-
-# Replace whatever CORS line you have with this:
 CORS(app, origins=[
     "https://tunnel-fan.vercel.app",
     "http://localhost:3000"
