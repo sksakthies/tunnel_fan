@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
+import Login from "./Login";
 
 // Reusable Circular Progress Widget
 const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {
@@ -105,8 +106,8 @@ function useSlidingWindow(
       count >= criticalThreshold
         ? "critical"
         : count >= Math.ceil(criticalThreshold / 2)
-        ? "warning"
-        : "normal";
+          ? "warning"
+          : "normal";
 
     // Count new critical fires (transitions into critical)
     if (level === "critical" && prevLevelRef.current !== "critical") {
@@ -143,8 +144,8 @@ function useSlidingWindow(
 
 // ─── Sliding Window Panel UI ──────────────────────────────────────────────────
 const SW_COLORS = {
-  normal:   { border: "#1a4d1a", bg: "#0d1f0d", text: "#4ade80", badge: "#166534", dot: "#22c55e" },
-  warning:  { border: "#4d3800", bg: "#1c1500", text: "#fbbf24", badge: "#78350f", dot: "#f59e0b" },
+  normal: { border: "#1a4d1a", bg: "#0d1f0d", text: "#4ade80", badge: "#166534", dot: "#22c55e" },
+  warning: { border: "#4d3800", bg: "#1c1500", text: "#fbbf24", badge: "#78350f", dot: "#f59e0b" },
   critical: { border: "#7f1d1d", bg: "#1a0000", text: "#f87171", badge: "#991b1b", dot: "#ef4444" },
 };
 
@@ -305,6 +306,8 @@ const SlidingWindowPanel = ({
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const API_BASE = "http://localhost:5000";
 
   const [fanData, setFanData] = useState<any>(null);
@@ -418,6 +421,10 @@ function App() {
     setPredChartUrl(`${API_BASE}/chart/prediction?date=${date}&fan=${liveFanName}&t=${Date.now()}`);
   };
 
+  if (!isAuthenticated) {
+    return <Login onLogin={setIsAuthenticated} />;
+  }
+
   return (
     <div className="container">
       {/* 🚨 Sliding Alert for Anomaly — UNCHANGED */}
@@ -436,10 +443,10 @@ function App() {
         <div className="live-indicator">
           <div
             className={`dot ${currentStatus === "anomaly"
-                ? "dot-anomaly"
-                : currentStatus === "normal"
-                  ? "dot-normal"
-                  : "dot-unknown"
+              ? "dot-anomaly"
+              : currentStatus === "normal"
+                ? "dot-normal"
+                : "dot-unknown"
               }`}
           />
           <span className="live-text">
@@ -509,10 +516,10 @@ function App() {
 
         <div
           className={`status-banner ${displayFan.status === "anomaly"
-              ? "status-anom"
-              : displayFan.status === "normal"
-                ? "status-norm"
-                : "status-wait"
+            ? "status-anom"
+            : displayFan.status === "normal"
+              ? "status-norm"
+              : "status-wait"
             }`}
         >
           {displayFan.status === "anomaly" && "⚠️ Critical Anomaly Detected by ML Output Model"}

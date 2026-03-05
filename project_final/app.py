@@ -21,7 +21,7 @@ app = Flask(__name__)
 CORS(app,origin="https://tunnel-fan.vercel.app?_vercel_share=yVvvovDYAbfW9vtD9834hfLDbsmaX4Hq")
 
 # Initialize Firebase
-cred = credentials.Certificate(r"C:\tunnel_fan\project_final\realtime_database.json")
+cred = credentials.Certificate("realtime_database.json")
 
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://tunnelbooster-ff01f-default-rtdb.asia-southeast1.firebasedatabase.app'
@@ -31,9 +31,9 @@ firebase_admin.initialize_app(cred, {
 model = joblib.load("isolation_model.pkl")
 
 # Route for home page
-@app.route('/')
+@app.route('/index')
 def index():
-    return render_template('index.html')
+    return jsonify(message="Hello from Flask in Docker ✅")
 
 # Route for real-time streaming
 @app.route("/stream")
