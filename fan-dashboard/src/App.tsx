@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Login from "./Login";
 
-const BASE_URL = "http://10.41.212.237:5000";
+const BASE_URL = "https://flask-api-latest-hr11.onrender.com";
 
 // Reusable Circular Progress Widget
 const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {;
