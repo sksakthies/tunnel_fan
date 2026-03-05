@@ -20,7 +20,7 @@ app = Flask(__name__)
 CORS(app, origins=[
     "https://tunnel-fan.vercel.app",
     "http://localhost:3000"
-])
+], supports_credentials=True)
 
 # Initialize Firebase
 cred = credentials.Certificate("realtime_database.json")
@@ -163,11 +163,14 @@ def stream():
             # normal streaming
             yield f"data: {json.dumps(fans_data)}\n\n"
             time.sleep(SLEEP_SEC)
-
-    return Response(
-        generate_data(),
-        mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+            return Response(
+                    generate_data(),
+                    mimetype="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "X-Accel-Buffering": "no",
+                        "Access-Control-Allow-Origin": "https://tunnel-fan.vercel.app"
+                    }
     )
 # ================================
 # ADDITIONAL FEATURES (DO NOT MODIFY EXISTING CODE)
