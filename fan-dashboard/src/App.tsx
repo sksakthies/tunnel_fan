@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Login from "./Login";
+fetch("https://tunnel-fan.vercel.app?_vercel_share=DKlYclgEPJ691jOKEH47xKFd3sH0y8WY")
 
 // Reusable Circular Progress Widget
 const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {
