@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Login from "./Login";
 
-const BASE_URL = "https://flask-api-latest-hr11.onrender.com";
+//const BASE_URL = "https://flask-api-latest-hr11.onrender.com";
 
 // Reusable Circular Progress Widget
 const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {;
@@ -307,10 +307,10 @@ const SlidingWindowPanel = ({
 };
 
 // ─── App ──────────────────────────────────────────────────────────────────────
+const API_BASE = "https://flask-api-latest-hr11.onrender.com";
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const API_BASE = "http://localhost:5000";
 
   const [fanData, setFanData] = useState<any>(null);
   const [liveHistory, setLiveHistory] = useState<string[]>([]);
@@ -375,7 +375,7 @@ function App() {
     return () => {
       eventSource.close();
     };
-  }, [API_BASE]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load historical data
   const loadHistory = async () => {
