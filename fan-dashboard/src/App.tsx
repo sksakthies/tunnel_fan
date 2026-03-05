@@ -436,7 +436,26 @@ function App() {
         </div>
       </div>
 
-      <h1>Tunnel Fan Monitoring</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <h1 style={{ marginBottom: 0 }}>Tunnel Fan Monitoring</h1>
+        <button
+          onClick={() => setIsAuthenticated(false)}
+          style={{
+            background: 'linear-gradient(to right, #ef4444, #b91c1c)',
+            padding: '10px 20px',
+            fontSize: '0.95rem',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+            borderRadius: '10px'
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Sign Out
+        </button>
+      </div>
 
       {/* LIVE STATUS PANEL — UNCHANGED */}
       <div className="glass-panel live-panel">
