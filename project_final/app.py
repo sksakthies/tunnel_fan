@@ -17,10 +17,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 # Initialize Flask
 app = Flask(__name__)
-CORS(app, origins=[
-    "https://tunnel-fan.vercel.app",
-    "http://localhost:3000"
-], supports_credentials=True)
+CORS(app)
 
 # Initialize Firebase
 cred = credentials.Certificate("realtime_database.json")
@@ -97,7 +94,7 @@ def stream():
                 if latest_data.get("temperature", 0) < 20 or latest_data.get("temperature", 0) > 34:
                     threshold_anomaly_params.append("temperature")
 
-                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 40:
+                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 50:
                     threshold_anomaly_params.append("humidity")
 
                 if latest_data.get("current", 0) < 0.776 or latest_data.get("current", 0) > 1.0:

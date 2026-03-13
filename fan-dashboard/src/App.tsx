@@ -5,7 +5,8 @@ import Login from "./Login";
 //const BASE_URL = "https://flask-api-latest-hr11.onrender.com";
 
 // Reusable Circular Progress Widget
-const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {;
+const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {
+  ;
   const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   const radius = 64;
   const circumference = 2 * Math.PI * radius;
@@ -310,7 +311,18 @@ const SlidingWindowPanel = ({
 const API_BASE = "https://flask-api-latest-hr11.onrender.com";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem("isAuthenticated") === "true";
+  });
+
+  const handleLoginStatus = (status: boolean) => {
+    setIsAuthenticated(status);
+    if (status) {
+      localStorage.setItem("isAuthenticated", "true");
+    } else {
+      localStorage.removeItem("isAuthenticated");
+    }
+  };
 
   const [fanData, setFanData] = useState<any>(null);
   const [liveHistory, setLiveHistory] = useState<string[]>([]);
@@ -424,7 +436,7 @@ function App() {
   };
 
   if (!isAuthenticated) {
-    return <Login onLogin={setIsAuthenticated} />;
+    return <Login onLogin={handleLoginStatus} />;
   }
 
   return (
@@ -441,7 +453,7 @@ function App() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <h1 style={{ marginBottom: 0 }}>Tunnel Fan Monitoring</h1>
         <button
-          onClick={() => setIsAuthenticated(false)}
+          onClick={() => handleLoginStatus(false)}
           style={{
             background: 'linear-gradient(to right, #ef4444, #b91c1c)',
             padding: '10px 20px',
