@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">tunnelfan</string>
+    <string name="title_activity_main">tunnelfan</string>
+    <string name="package_name">com.tunnelfan.app</string>
+    <string name="custom_url_scheme">com.tunnelfan.app</string>
+</resources>

@@ -1,0 +1,8 @@
+{
+  "appId": "com.tunnelfan.app",
+  "appName": "tunnelfan",
+  "webDir": "fan-dashboard/build",
+  "android": {
+    "allowMixedContent": true
+  }
+}

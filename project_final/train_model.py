@@ -5,7 +5,7 @@ from sklearn.ensemble import IsolationForest
 import joblib
 
 # Initialize Firebase
-cred = credentials.Certificate("C:\\tunnel_fan\\project_final\\realtime_database.json")
+cred = credentials.Certificate("S:\\tunnel_fan\\project_final\\realtime_database.json")
 
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://tunnelbooster-ff01f-default-rtdb.asia-southeast1.firebasedatabase.app'

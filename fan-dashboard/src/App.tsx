@@ -5,17 +5,17 @@ import Login from "./Login";
 //const BASE_URL = "https://flask-api-latest-hr11.onrender.com";
 
 // Reusable Circular Progress Widget
-const CircularWidget = ({ label, value, unit, min, max, isDanger }: any) => {
+const CircularWidget = ({ label, value, unit, min, max, statusLevel }: any) => {
   ;
   const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   const radius = 64;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const color = isDanger ? "#ef4444" : "#10b981";
+  const color = statusLevel === "critical" ? "#ef4444" : statusLevel === "warning" ? "#f59e0b" : "#10b981";
 
   // Formatter specifically for precise numbers
-  const displayValue = label === 'Current' || label === 'Temperature'
+  const displayValue = label === 'Current' || label === 'Temperature' || label === 'Vibration'
     ? Number(value).toFixed(2)
     : Number(value).toFixed(0);
 
@@ -330,6 +330,13 @@ function App() {
   const [date, setDate] = useState("");
   const [predChartUrl, setPredChartUrl] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refreshStream = () => {
+    setFanData(null); // Optional: clear current data to show it's refreshing
+    console.log("Restarting live stream...");
+    setRefreshKey((prev) => prev + 1);
+  };
 
   // ── Sliding Window (window=7, critical at 5 anomalies, decay 60s) ──────────
   const { swState, push: swPush, reset: swReset } = useSlidingWindow(7, 5, 60000);
@@ -356,6 +363,7 @@ function App() {
   const livePct = liveTotal === 0 ? 0 : Math.round((liveAnomalyCount / liveTotal) * 100);
 
   const currentStatus = displayFan.status || "normal";
+  const effectiveStatus = currentStatus === "anomaly" ? "critical" : currentStatus;
 
   // Real-time stream
   useEffect(() => {
@@ -387,7 +395,7 @@ function App() {
     return () => {
       eventSource.close();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load historical data
   const loadHistory = async () => {
@@ -418,13 +426,29 @@ function App() {
   };
 
   const downloadCSV = () => {
-    if (!date) return;
-    window.open(`${API_BASE}/download/csv?date=${date}`, "_blank");
+    if (!date) {
+      alert("Please enter a date first (DD-MM-YYYY)");
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = `${API_BASE}/download/csv?date=${date}`;
+    link.download = `fan_data_${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const downloadExcel = () => {
-    if (!date) return;
-    window.open(`${API_BASE}/download/excel?date=${date}`, "_blank");
+    if (!date) {
+      alert("Please enter a date first (DD-MM-YYYY)");
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = `${API_BASE}/download/excel?date=${date}`;
+    link.download = `fan_data_${date}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const showPredictionChart = () => {
@@ -441,12 +465,12 @@ function App() {
 
   return (
     <div className="container">
-      {/* 🚨 Sliding Alert for Anomaly — UNCHANGED */}
-      <div className={`alert-slider ${currentStatus === "anomaly" ? "show" : ""}`}>
+      {/* 🚨 Sliding Alert for Anomaly */}
+      <div className={`alert-slider ${effectiveStatus === "critical" ? "show" : ""}`}>
         <div className="alert-icon">🚨</div>
         <div>
-          <div style={{ fontSize: '1.1rem', marginBottom: '4px', fontWeight: 800 }}>CRITICAL ANOMALY</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.95 }}>ML Model detected abnormal telemetry live.</div>
+          <div style={{ fontSize: '1.1rem', marginBottom: '4px', fontWeight: 800 }}>CRITICAL STATE</div>
+          <div style={{ fontSize: '0.85rem', opacity: 0.95 }}>ML Model detected critical telemetry live.</div>
         </div>
       </div>
 
@@ -471,23 +495,27 @@ function App() {
         </button>
       </div>
 
-      {/* LIVE STATUS PANEL — UNCHANGED */}
+      {/* LIVE STATUS PANEL */}
       <div className="glass-panel live-panel">
         <div className="live-indicator">
           <div
-            className={`dot ${currentStatus === "anomaly"
+            className={`dot ${effectiveStatus === "critical"
               ? "dot-anomaly"
-              : currentStatus === "normal"
-                ? "dot-normal"
-                : "dot-unknown"
+              : effectiveStatus === "warning"
+                ? "dot-warn"
+                : effectiveStatus === "normal"
+                  ? "dot-normal"
+                  : "dot-unknown"
               }`}
           />
           <span className="live-text">
-            {currentStatus === "anomaly"
-              ? "ANOMALY DETECTED (ML)"
-              : currentStatus === "normal"
-                ? "SYSTEM NORMAL (ML)"
-                : "WAITING FOR ML PREDICTION..."}
+            {effectiveStatus === "critical"
+              ? "CRITICAL STATE DETECTED"
+              : effectiveStatus === "warning"
+                ? "WARNING STATE DETECTED"
+                : effectiveStatus === "normal"
+                  ? "SYSTEM NORMAL (ML)"
+                  : "WAITING FOR ML PREDICTION..."}
           </span>
         </div>
 
@@ -506,7 +534,24 @@ function App() {
             <div className="title-main">Live Parameters</div>
             <div className="title-sub">{liveFanName} Active Telemetry</div>
           </div>
-          <div className="meta-value" style={{ color: '#38bdf8' }}>{displayFan.timestamp}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <button
+               onClick={refreshStream}
+               style={{
+                 background: 'transparent',
+                 border: '1px solid rgba(255, 255, 255, 0.2)',
+                 padding: '6px 12px',
+                 fontSize: '0.8rem',
+                 color: '#e2e8f0',
+                 borderRadius: '6px',
+                 cursor: 'pointer',
+                 boxShadow: 'none'
+               }}
+            >
+               ↻ Restart Stream
+            </button>
+            <div className="meta-value" style={{ color: '#38bdf8' }}>{displayFan.timestamp}</div>
+          </div>
         </div>
 
         <div className="widgets-row">
@@ -516,7 +561,7 @@ function App() {
             unit="rpm"
             min={0}
             max={5000}
-            isDanger={displayFan.status === "anomaly"}
+            statusLevel={effectiveStatus}
           />
 
           <CircularWidget
@@ -525,7 +570,7 @@ function App() {
             unit="°C"
             min={0}
             max={80}
-            isDanger={displayFan.status === "anomaly"}
+            statusLevel={effectiveStatus}
           />
 
           <CircularWidget
@@ -534,7 +579,7 @@ function App() {
             unit="%"
             min={0}
             max={100}
-            isDanger={displayFan.status === "anomaly"}
+            statusLevel={effectiveStatus}
           />
 
           <CircularWidget
@@ -543,21 +588,33 @@ function App() {
             unit="A"
             min={0}
             max={5}
-            isDanger={displayFan.status === "anomaly"}
+            statusLevel={effectiveStatus}
+          />
+
+          <CircularWidget
+            label="Vibration"
+            value={displayFan.vibration}
+            unit="mm/s"
+            min={0}
+            max={5}
+            statusLevel={effectiveStatus}
           />
         </div>
 
         <div
-          className={`status-banner ${displayFan.status === "anomaly"
+          className={`status-banner ${effectiveStatus === "critical"
             ? "status-anom"
-            : displayFan.status === "normal"
-              ? "status-norm"
-              : "status-wait"
+            : effectiveStatus === "warning"
+              ? "status-warn"
+              : effectiveStatus === "normal"
+                ? "status-norm"
+                : "status-wait"
             }`}
         >
-          {displayFan.status === "anomaly" && "⚠️ Critical Anomaly Detected by ML Output Model"}
-          {displayFan.status === "normal" && "✅ All Systems Operational – Telemetry Normal"}
-          {displayFan.status === "unknown" && "⏳ Gathering Telemetry Data..."}
+          {effectiveStatus === "critical" && "⚠️ Critical State Detected by ML Output Model"}
+          {effectiveStatus === "warning" && "⚠️ Warning State Detected - Immediate attention recommended"}
+          {effectiveStatus === "normal" && "✅ All Systems Operational – Telemetry Normal"}
+          {effectiveStatus === "unknown" && "⏳ Gathering Telemetry Data..."}
         </div>
       </div>
 
@@ -634,8 +691,8 @@ function App() {
                     <td>{Number(item.rpm).toFixed(0)}</td>
                     <td>{Number(item.vibration).toFixed(2)}</td>
                     <td>
-                      <span className={`status-badge ${item.status === "anomaly" ? "badge-anomaly" : "badge-normal"}`}>
-                        {(item.status || "normal").toUpperCase()}
+                      <span className={`status-badge ${item.status === "anomaly" || item.status === "critical" ? "badge-anomaly" : item.status === "warning" ? "badge-warn" : "badge-normal"}`}>
+                        {(item.status === "anomaly" ? "critical" : item.status || "normal").toUpperCase()}
                       </span>
                     </td>
                   </tr>
