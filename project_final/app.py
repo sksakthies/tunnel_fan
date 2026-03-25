@@ -19,15 +19,20 @@ from firebase_admin import credentials, db
 app = Flask(__name__)
 CORS(app)
 
+import os
+
 # Initialize Firebase
-cred = credentials.Certificate("realtime_database.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+cred_path = os.path.join(BASE_DIR, "realtime_database.json")
+cred = credentials.Certificate(cred_path)
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://tunnelbooster-ff01f-default-rtdb.asia-southeast1.firebasedatabase.app'
+    'databaseURL': 'https://tunnelventilation-8ba9a-default-rtdb.firebaseio.com/'
 })
 
 # Load trained ML model
-model = joblib.load("isolation_model.pkl")
+model_path = os.path.join(BASE_DIR, "isolation_model.pkl")
+model = joblib.load(model_path)
 
 # Route for home page
 @app.route('/index')
@@ -91,20 +96,20 @@ def stream():
 
                 threshold_anomaly_params = []
 
-                if latest_data.get("temperature", 0) < 20 or latest_data.get("temperature", 0) > 34:
+                if latest_data.get("temperature", 0) < 20 or latest_data.get("temperature", 0) > 35:
                     threshold_anomaly_params.append("temperature")
 
-                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 50:
+                if latest_data.get("humidity", 0) < 30 or latest_data.get("humidity", 0) > 70:
                     threshold_anomaly_params.append("humidity")
 
-                if latest_data.get("current", 0) < 0.776 or latest_data.get("current", 0) > 1.0:
+                if latest_data.get("current", 0) < 0.01 or latest_data.get("current", 0) > 1.0:
                     threshold_anomaly_params.append("current")
 
                 if latest_data.get("rpm", 0) < 3800 or latest_data.get("rpm", 0) > 6400:
                     threshold_anomaly_params.append("rpm")
 
                 # vibration anomaly only high vibration (fan-off not anomaly)
-                if latest_data.get("vibration", 0) > 2.7:
+                if latest_data.get("vibration", 0) > 3.1:
                     threshold_anomaly_params.append("vibration")
 
                 anomaly_status = "anomaly" if (
@@ -166,7 +171,7 @@ def stream():
                     headers={
                         "Cache-Control": "no-cache",
                         "X-Accel-Buffering": "no",
-                        "Access-Control-Allow-Origin": "https://tunnel-fan.vercel.app"
+                        "Access-Control-Allow-Origin": "*"
                     }
     )
 # ================================
@@ -194,11 +199,11 @@ def get_history():
     for timestamp, values in fan_data.items():
          # ---- ML anomaly prediction (same as stream) ----
         features = [
-            values.get("temperature"),
-            values.get("humidity"),
-            values.get("current"),
-            values.get("rpm"),
-            values.get("vibration")
+            values.get("temperature", 0),
+            values.get("humidity", 0),
+            values.get("current", 0),
+            values.get("rpm", 0),
+            values.get("vibration", 0)
         ]
 
         features_array = np.array(features).reshape(1, -1)
@@ -373,15 +378,28 @@ def chart_prediction_from_db():
     x_labels = []
 
     for ts in timestamps:
-        status = fan_data[ts].get("status")  # <-- stored status
+        values = fan_data[ts]
+        status = values.get("status")  # <-- stored status
         if status is None:
-            continue
+            features = [
+                values.get("temperature", 0),
+                values.get("humidity", 0),
+                values.get("current", 0),
+                values.get("rpm", 0),
+                values.get("vibration", 0)
+            ]
+            features_array = np.array(features).reshape(1, -1)
+            try:
+                ml_prediction = model.predict(features_array)[0]
+                status = 'anomaly' if ml_prediction == -1 else 'normal'
+            except Exception:
+                continue
 
         y.append(1 if status == "anomaly" else 0)
         x_labels.append(ts)
 
     if len(y) == 0:
-        return {"error": "no status field found. Stream must run once to store status."}, 404
+        return {"error": "no data could be classified. Please ensure telemetry data exists."}, 404
 
     fig = plt.figure(figsize=(10, 3.8))
     plt.plot(range(len(y)), y, marker="o", linestyle="-")
