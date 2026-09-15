@@ -8,7 +8,7 @@ import joblib
 cred = credentials.Certificate("S:\\tunnel_fan\\project_final\\realtime_database.json")
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://tunnelventilation-8ba9a-default-rtdb.firebaseio.com/'
+    ##'databaseURL': 
 })
 
 fan_ids = ['Fan-1','Fan-2']
