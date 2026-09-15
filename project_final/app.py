@@ -27,7 +27,7 @@ cred_path = os.path.join(BASE_DIR, "realtime_database.json")
 cred = credentials.Certificate(cred_path)
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://tunnelventilation-8ba9a-default-rtdb.firebaseio.com/'
+    ##'databaseURL': 
 })
 
 # Load trained ML model
@@ -37,7 +37,7 @@ model = joblib.load(model_path)
 # Route for home page
 @app.route('/index')
 def index():
-    return jsonify(message="Hello from Flask in Docker ✅")
+    return jsonify(message="Hello from Flask in Docker ")
 
 # Route for real-time streaming
 @app.route("/stream")
@@ -143,7 +143,7 @@ def stream():
             if no_data_count >= NO_DATA_LIMIT:
                 # send final message then stop
                 yield f"data: {json.dumps({'stream_state': 'stopped', 'reason': 'no_data_from_firebase'})}\n\n"
-                return  # ✅ closes SSE connection
+                return  # closes SSE connection
 
             # Case B: data exists but never updates (latest timestamp not changing)
             # If every fan is stale for STALE_LIMIT cycles => STOP stream
@@ -160,7 +160,7 @@ def stream():
 
             if any_fan_has_data and all_stale and not any_fan_updated:
                 yield f"data: {json.dumps({'stream_state': 'stopped', 'reason': 'no_new_live_updates'})}\n\n"
-                return  # ✅ closes SSE connection
+                return  #  closes SSE connection
 
             # normal streaming
             yield f"data: {json.dumps(fans_data)}\n\n"
@@ -179,7 +179,7 @@ def stream():
 # ================================
 
 # -------------------------------
-# 1️⃣ Historical Data by Date
+#    Historical Data by Date
 # -------------------------------
 @app.route('/history')
 def get_history():
@@ -227,7 +227,7 @@ def get_history():
 
 
 # -------------------------------
-# 2️⃣ Download CSV
+#    Download CSV
 # -------------------------------
 @app.route('/download/csv')
 def download_csv():
@@ -269,7 +269,7 @@ def download_csv():
             "current": values.get("current"),
             "rpm": values.get("rpm"),
             "vibration": values.get("vibration"),
-            "status": anomaly_status   # ✅ FORCE ADD STATUS
+            "status": anomaly_status   #  FORCE ADD STATUS
         })
 
     df = pd.DataFrame(records)
@@ -299,7 +299,7 @@ def download_csv():
 
 
 # -------------------------------
-# 3️⃣ Download Excel
+#     Download Excel
 # -------------------------------
 @app.route('/download/excel')
 def download_excel():
