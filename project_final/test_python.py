@@ -4,7 +4,7 @@ from firebase_admin import credentials, db
 cred = credentials.Certificate(r"C:\tunnel_fan\project_final\realtime_database.json")
 
 firebase_admin.initialize_app(cred, {
-    "databaseURL": "https://tunnelbooster-ff01f-default-rtdb.asia-southeast1.firebasedatabase.app"
+    ##"databaseURL": 
 })
 
 print(db.reference("/").get())
