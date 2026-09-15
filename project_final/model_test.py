@@ -9,11 +9,11 @@ import pickle
 # ── STEP 1: LOAD MODEL ───────────────────────────────────
 try:
     iso_forest = joblib.load('isolation_model.pkl')
-    print("✅ Model loaded successfully")
+    print(" Model loaded successfully")
 except:
     with open('isolation_model.pkl', 'rb') as f:
         iso_forest = pickle.load(f)
-    print("✅ Model loaded via pickle")
+    print(" Model loaded via pickle")
 
 # ── STEP 2: LOAD YOUR DATA ───────────────────────────────
 # Replace this with your actual data loading
@@ -35,19 +35,19 @@ def evaluate_isolation_forest(model, X_test):
     anomaly_scores = scores[predictions == -1]
 
     # METHOD 1: KS Test
-    print("\n📌 METHOD 1: Score Separation (KS Test)")
+    print("\n METHOD 1: Score Separation (KS Test)")
     if len(anomaly_scores) > 0:
         ks_stat, p_value = ks_2samp(normal_scores, anomaly_scores)
         print(f"   KS Statistic : {ks_stat:.4f}  (closer to 1 = better)")
         print(f"   P-Value      : {p_value:.6f}  (< 0.05 = significant)")
         if ks_stat > 0.5 and p_value < 0.05:
-            print("   ✅ Strong separation")
+            print("   Strong separation")
         elif ks_stat > 0.3:
-            print("   ⚠️  Moderate separation")
+            print("   Moderate separation")
         else:
-            print("   ❌ Weak separation")
+            print("   Weak separation")
     else:
-        print("   ⚠️  No anomalies detected — lower contamination")
+        print("    No anomalies detected — lower contamination")
 
     # METHOD 2: Score Statistics
     print("\n📌 METHOD 2: Score Statistics")
@@ -57,9 +57,9 @@ def evaluate_isolation_forest(model, X_test):
         gap = normal_scores.mean() - anomaly_scores.mean()
         print(f"   Score Gap : {gap:.4f}  (larger = better)")
         if gap > 0.1:
-            print("   ✅ Good score gap")
+            print("    Good score gap")
         else:
-            print("   ⚠️  Small score gap — consider retuning")
+            print("    Small score gap — consider retuning")
 
     # METHOD 3: Silhouette Score
     print("\n📌 METHOD 3: Silhouette Score")
@@ -68,13 +68,13 @@ def evaluate_isolation_forest(model, X_test):
                                      sample_size=min(5000, len(X_test)))
         print(f"   Silhouette Score: {sil_score:.4f}")
         if sil_score > 0.5:
-            print("   ✅ Good separation")
+            print("   Good separation")
         elif sil_score > 0.2:
-            print("   ⚠️  Moderate separation")
+            print("    Moderate separation")
         else:
-            print("   ❌ Poor separation")
+            print("   Poor separation")
     else:
-        print("   ⚠️  Only one class — adjust contamination")
+        print("   Only one class — adjust contamination")
 
     # METHOD 4: Contamination Sensitivity
     print("\n📌 METHOD 4: Contamination Sensitivity")
@@ -122,4 +122,4 @@ def evaluate_isolation_forest(model, X_test):
     print("=" * 55)
 
 # ── RUN ──────────────────────────────────────────────────
-evaluate_isolation_forest(iso_forest, X_test)  # ✅ fixed variable name
+evaluate_isolation_forest(iso_forest, X_test)  # fixed variable name
