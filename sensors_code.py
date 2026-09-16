@@ -17,7 +17,7 @@ MIN_DUTY = 250
 MAX_DUTY = 1023
 
 # ===========================
-# 1️⃣ VIBRATION SENSOR
+#  VIBRATION SENSOR
 # ===========================
 adc_x = ADC(Pin(32))
 adc_y = ADC(Pin(33))
@@ -30,7 +30,7 @@ def read_voltage(adc):
     return adc.read() * VREF / ADC_MAX
 
 # ===========================
-# 2️⃣ CURRENT SENSOR
+#  CURRENT SENSOR
 # ===========================
 adc_current = ADC(Pin(35))
 adc_current.atten(ADC.ATTN_11DB)
@@ -51,19 +51,19 @@ def read_current():
     return round(current, 3)
 
 # ===========================
-# 3️⃣ POTENTIOMETER
+#  POTENTIOMETER
 # ===========================
 adc_pot = ADC(Pin(36))
 adc_pot.atten(ADC.ATTN_11DB)
 
 # ===========================
-# 4️⃣ FAN PWM
+#  FAN PWM
 # ===========================
 fan_pwm = PWM(Pin(26), freq=25000)
 fan_pwm.duty(MIN_DUTY)
 
 # ===========================
-# 5️⃣ RPM SENSOR
+#  RPM SENSOR
 # ===========================
 rpm_pin = Pin(25, Pin.IN, Pin.PULL_UP)
 pulse_count = 0
@@ -82,7 +82,7 @@ def calculate_rpm(interval_sec):
     return round(rpm, 1)
 
 # ===========================
-# 6️⃣ DHT11
+#  DHT11
 # ===========================
 dht_sensor = dht.DHT11(Pin(27))
 
@@ -94,7 +94,7 @@ def read_dht():
         return None, None
 
 # ===========================
-# 7️⃣ WIFI (Stable Version)
+#  WIFI (Stable Version)
 # ===========================
 ssid = "password"
 password = "password"
@@ -119,7 +119,7 @@ while not wifi.isconnected():
 print("WiFi Connected:", wifi.ifconfig())
 
 # ===========================
-# 8️⃣ FIREBASE
+#  FIREBASE
 # ===========================
 FIREBASE_URL = ##
 DEVICE_NAME = "Fan-1"
@@ -184,7 +184,7 @@ while True:
             data=json.dumps(data),
             headers={"Content-Type": "application/json"}
         )
-        print("Upload Success ✅")
+        print("Upload Success ")
         response.close()
     except Exception as e:
         print("Firebase error:", e)
